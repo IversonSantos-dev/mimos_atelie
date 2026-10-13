@@ -26,6 +26,7 @@ import {
 } from '../utils/whatsapp';
 import { ProductFormModal } from '../components/admin/ProductFormModal';
 import { BespokeOptionsManager } from '../components/admin/BespokeOptionsManager';
+import { isServiceRoleKey } from '../services/supabaseService';
 
 export const AdminDashboardPage: React.FC = () => {
   const {
@@ -657,16 +658,42 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-mono text-xs uppercase font-bold text-atelie-rose-800">
-                Supabase Anon Public Key
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block font-mono text-xs uppercase font-bold text-atelie-rose-800">
+                  Supabase Anon Public Key (Chave Pública 'anon')
+                </label>
+                <span className="font-mono text-[10px] text-atelie-brown-500">
+                  Role: anon (public)
+                </span>
+              </div>
               <input
-                type="password"
+                type="text"
                 value={sbAnonKey}
                 onChange={(e) => setSbAnonKey(e.target.value)}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="mt-1.5 w-full rounded-xl border border-atelie-rose-300 bg-white px-4 py-2.5 font-mono text-xs text-atelie-brown-900"
+                className={`mt-1.5 w-full rounded-xl border bg-white px-4 py-2.5 font-mono text-xs text-atelie-brown-900 ${
+                  isServiceRoleKey(sbAnonKey)
+                    ? 'border-red-500 bg-red-50 focus:border-red-600'
+                    : 'border-atelie-rose-300'
+                }`}
               />
+              {isServiceRoleKey(sbAnonKey) ? (
+                <div className="mt-2.5 rounded-2xl border border-red-300 bg-red-50 p-3.5 text-xs text-red-800">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>⚠️ Chave Secreta Detectada (service_role)</span>
+                  </p>
+                  <p className="mt-1 text-[11px] leading-relaxed">
+                    Você colou a chave <strong>service_role (secret)</strong>. O Supabase proíbe o uso dessa chave no navegador por segurança.
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-red-900">
+                    👉 Vá em <strong>Project Settings → API</strong> no Supabase e copie a chave rotulada como <strong>anon public</strong> (não a secret).
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-1 text-[11px] text-atelie-brown-500">
+                  Certifique-se de copiar a chave rotulada como <strong>anon public</strong> (e não a service_role secret).
+                </p>
+              )}
             </div>
 
             <label className="flex items-center gap-2.5 cursor-pointer">
@@ -716,8 +743,8 @@ export const AdminDashboardPage: React.FC = () => {
                 <code className="text-atelie-rose-800 font-bold">supabase/schema.sql</code> incluso na raiz deste projeto.
               </li>
               <li>
-                Copie a <strong>Project URL</strong> e a <strong>anon public key</strong> em{' '}
-                <em>Project Settings → API</em> e cole ao lado.
+                Copie a <strong>Project URL</strong> e a chave pública <strong>anon (public)</strong> em{' '}
+                <em>Project Settings → API</em> e cole ao lado (<strong>não utilize</strong> a chave service_role secret).
               </li>
               <li>
                 Clique em <strong>Enviar Catálogo Local para o Supabase Agora</strong> para subir todas as peças com 1 clique.

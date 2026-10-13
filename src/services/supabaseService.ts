@@ -47,6 +47,20 @@ export function getSupabaseConfig(): SupabaseConnectionConfig {
   };
 }
 
+export function isServiceRoleKey(key: string): boolean {
+  try {
+    const parts = key.trim().split('.');
+    if (parts.length === 3) {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      return payload.role === 'service_role';
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 /**
  * Salva as credenciais do Supabase informadas pelo administrador no painel
  */
@@ -410,6 +424,15 @@ export async function syncAllLocalToSupabase(
   settings: StoreSettings,
   bespokeSettings?: BespokeCustomizerSettings
 ): Promise<{ ok: boolean; message: string }> {
+  const config = getSupabaseConfig();
+  if (isServiceRoleKey(config.anonKey)) {
+    return {
+      ok: false,
+      message:
+        'Chave Secreta Detectada: Você colou a chave "service_role" (secret). O Supabase não permite chaves secretas no navegador por segurança. No painel do Supabase, acesse Project Settings → API e copie a chave pública rotulada como "anon" (public).',
+    };
+  }
+
   const client = getSupabaseClient();
   if (!client) {
     return {
