@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: #FAF7F2;
+    color: #382013;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* Custom Luxury Scrollbar nos tons do Ateliê */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF7F2;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #DFB2A3;
+    border-radius: 9999px;
+    border: 2px solid #FAF7F2;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #B86D5B;
+  }
+}
+
+@layer utilities {
+  .text-gold-shimmer {
+    background: linear-gradient(120deg, #382013 0%, #B86D5B 35%, #DFB2A3 60%, #382013 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-rose-shimmer {
+    background: linear-gradient(120deg, #DFB2A3 0%, #B86D5B 50%, #7A3F32 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px -10px rgba(56, 32, 19, 0.07);
+  }
+
+  .gold-border-subtle {
+    border: 1px solid rgba(223, 178, 163, 0.55);
+  }
+
+  .gold-border-glow {
+    border: 1px solid rgba(206, 142, 125, 0.65);
+    box-shadow: 0 0 25px -5px rgba(223, 178, 163, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  }
+}
+
