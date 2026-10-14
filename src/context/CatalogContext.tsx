@@ -33,14 +33,14 @@ interface CatalogContextValue {
   dataSource: 'supabase' | 'local';
   isLoading: boolean;
   supabaseConfig: SupabaseConnectionConfig;
-  saveProduct: (product: Product) => Promise<{ syncedCloud: boolean }>;
-  deleteProduct: (id: string) => Promise<{ syncedCloud: boolean }>;
-  toggleProductVisibility: (id: string) => Promise<void>;
-  quickUpdatePrice: (id: string, newPrice: number) => Promise<void>;
-  updateSettings: (newSettings: StoreSettings) => Promise<{ syncedCloud: boolean }>;
+  saveProduct: (product: Product) => Promise<{ syncedCloud: boolean; error?: string }>;
+  deleteProduct: (id: string) => Promise<{ syncedCloud: boolean; error?: string }>;
+  toggleProductVisibility: (id: string) => Promise<{ syncedCloud: boolean; error?: string } | void>;
+  quickUpdatePrice: (id: string, newPrice: number) => Promise<{ syncedCloud: boolean; error?: string } | void>;
+  updateSettings: (newSettings: StoreSettings) => Promise<{ syncedCloud: boolean; error?: string }>;
   updateBespokeSettings: (
     newSettings: BespokeCustomizerSettings
-  ) => Promise<{ syncedCloud: boolean }>;
+  ) => Promise<{ syncedCloud: boolean; error?: string }>;
   resetBespokeSettings: () => Promise<void>;
   updateSupabaseConnection: (config: SupabaseConnectionConfig) => Promise<void>;
   syncCatalogToCloud: () => Promise<{ ok: boolean; message: string }>;
@@ -141,18 +141,18 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [supabaseConfig, refreshAll]);
 
   const saveProduct = async (product: Product) => {
-    const { updatedList, syncedCloud } = await upsertProductRecord(product, products);
-    setProducts(updatedList);
-    if (syncedCloud) setDataSource('supabase');
+    const result = await upsertProductRecord(product, products);
+    setProducts(result.updatedList);
+    if (result.syncedCloud) setDataSource('supabase');
     notifyOtherTabs();
-    return { syncedCloud };
+    return result;
   };
 
   const deleteProduct = async (id: string) => {
-    const { updatedList, syncedCloud } = await deleteProductRecord(id, products);
-    setProducts(updatedList);
+    const result = await deleteProductRecord(id, products);
+    setProducts(result.updatedList);
     notifyOtherTabs();
-    return { syncedCloud };
+    return result;
   };
 
   const toggleProductVisibility = async (id: string) => {
@@ -163,7 +163,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       visible: !target.visible,
       updatedAt: new Date().toISOString(),
     };
-    await saveProduct(updatedProduct);
+    return await saveProduct(updatedProduct);
   };
 
   const quickUpdatePrice = async (id: string, newPrice: number) => {
@@ -174,7 +174,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       price: newPrice,
       updatedAt: new Date().toISOString(),
     };
-    await saveProduct(updatedProduct);
+    return await saveProduct(updatedProduct);
   };
 
   const updateSettings = async (newSettings: StoreSettings) => {

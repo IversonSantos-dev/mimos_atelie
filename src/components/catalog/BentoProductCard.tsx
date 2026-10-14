@@ -20,24 +20,14 @@ export const BentoProductCard: React.FC<BentoProductCardProps> = ({
 }) => {
   const whatsappUrl = buildProductWhatsAppUrl(product, globalWhatsapp);
 
-  // Classes de assimetria do Bento Grid (em telas grandes lg:grid-cols-12)
-  const bentoSpanClass = {
-    featured: 'lg:col-span-7 lg:row-span-2',
-    wide: 'lg:col-span-7',
-    tall: 'lg:col-span-5 lg:row-span-2',
-    standard: 'lg:col-span-5',
-  }[product.bentoSize || 'standard'];
-
-  const isFeatured = product.bentoSize === 'featured';
-
   return (
     <motion.article
       layout
       initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.55, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/95 border border-atelie-rose-300/70 shadow-atelie-soft transition-all duration-500 hover:border-atelie-rose-500 hover:shadow-lg ${bentoSpanClass}`}
+      transition={{ duration: 0.55, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative flex w-full flex-col justify-between overflow-hidden rounded-3xl bg-white/95 border border-atelie-rose-300/70 shadow-atelie-soft transition-all duration-500 hover:border-atelie-rose-500 hover:shadow-lg"
     >
       {/* Brilho Superior no Hover */}
       <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-3/4 rounded-full bg-atelie-rose-300/20 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
@@ -45,9 +35,7 @@ export const BentoProductCard: React.FC<BentoProductCardProps> = ({
       {/* Área da Fotografia com Clique para Inspeção */}
       <div
         onClick={() => onInspect(product)}
-        className={`relative w-full cursor-pointer overflow-hidden bg-atelie-cream-200 ${
-          isFeatured ? 'aspect-[16/10] sm:aspect-[16/9]' : 'aspect-[16/10]'
-        }`}
+        className="relative w-full aspect-[16/10] cursor-pointer overflow-hidden bg-atelie-cream-200"
       >
         <img
           src={product.imageUrl}
@@ -115,14 +103,12 @@ export const BentoProductCard: React.FC<BentoProductCardProps> = ({
 
           <h3
             onClick={() => onInspect(product)}
-            className={`mt-1.5 cursor-pointer font-display font-bold text-atelie-brown-900 transition-colors group-hover:text-atelie-rose-700 ${
-              isFeatured ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'
-            }`}
+            className="mt-1.5 cursor-pointer font-display text-lg sm:text-xl font-bold text-atelie-brown-900 transition-colors group-hover:text-atelie-rose-700 line-clamp-2 min-h-[3.25rem] flex items-center"
           >
             {product.name}
           </h3>
 
-          <p className="mt-2.5 line-clamp-3 text-xs sm:text-sm leading-relaxed text-atelie-brown-600">
+          <p className="mt-2 text-xs sm:text-sm leading-relaxed text-atelie-brown-600 line-clamp-3 min-h-[3.75rem]">
             {product.description}
           </p>
 

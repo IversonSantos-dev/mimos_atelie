@@ -12,8 +12,8 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess }) => 
   const { login } = useAuth();
   const { settings } = useCatalog();
 
-  const [email, setEmail] = useState('admin@mimosatelie.com');
-  const [password, setPassword] = useState('mimos2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -74,7 +74,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess }) => 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-atelie-rose-300 bg-atelie-cream-200/80 pl-10 pr-4 py-2.5 text-sm text-atelie-brown-900 placeholder-atelie-brown-400 focus:border-atelie-rose-500 focus:outline-none"
-                placeholder="admin@mimosatelie.com"
+                placeholder="eversonpaiva87@gmail.com"
               />
             </div>
           </div>
@@ -111,20 +111,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess }) => 
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>
-
-        {/* Credenciais Iniciais pré-preenchidas para conveniência */}
-        <div className="mt-6 rounded-2xl border border-atelie-rose-300 bg-atelie-rose-50 p-3.5 font-mono text-[11px] text-atelie-brown-700">
-          <div className="flex items-center gap-1.5 text-atelie-rose-800 font-bold">
-            <ShieldCheck className="h-4 w-4 text-atelie-rose-600" />
-            <span>Credenciais de Acesso:</span>
-          </div>
-          <p className="mt-1">
-            E-mail: <span className="font-bold text-atelie-brown-900">admin@mimosatelie.com</span>
-          </p>
-          <p>
-            Senha: <span className="font-bold text-atelie-brown-900">mimos2026</span> (alterável dentro do painel)
-          </p>
-        </div>
       </motion.div>
     </div>
   );

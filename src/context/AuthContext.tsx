@@ -18,8 +18,8 @@ const AUTH_SESSION_KEY = 'mimos_atelie_admin_session_v1';
 const ADMIN_CREDS_KEY = 'mimos_atelie_admin_creds_v1';
 
 const DEFAULT_CREDS: AdminCredentials = {
-  email: 'admin@mimosatelie.com',
-  passwordHash: 'mimos2026',
+  email: 'eversonpaiva87@gmail.com',
+  passwordHash: 'Mimosatelie@2026',
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -29,7 +29,14 @@ function getStoredCreds(): AdminCredentials {
     const raw = localStorage.getItem(ADMIN_CREDS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as AdminCredentials;
-      if (parsed.email && parsed.passwordHash) return parsed;
+      if (parsed.email && parsed.passwordHash) {
+        // Se ainda for a conta antiga de teste, migra automaticamente para o novo admin padrão
+        if (parsed.email.toLowerCase() === 'admin@mimosatelie.com') {
+          localStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify(DEFAULT_CREDS));
+          return DEFAULT_CREDS;
+        }
+        return parsed;
+      }
     }
   } catch {
     // ignore

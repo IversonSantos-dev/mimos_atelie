@@ -34,7 +34,7 @@ O **Mimos Ateliê** é uma aplicação web moderna projetada para elevar a exper
 ## ✨ Funcionalidades
 
 ### 🏛️ Vitrine Pública & Acervo
-- **Layout Bento Grid Responsivo:** Cartões em tamanhos variados (`featured`, `wide`, `tall`, `standard`) com selos comemorativos (*Edição Imperial*, *Noivas & Sacramento*, etc.).
+- **Layout Equilibrado em Pares (2 a 2 no PC):** Disposição harmoniosa lado a lado de 2 em 2 peças no desktop e tablets, garantindo simetria perfeita mesmo ao adicionar novas peças.
 - **Filtro por Categorias:** Navegação fluida entre *Pedras Naturais*, *Edição Imperial*, *Madeira Nobre*, *Noivas & Relicários* e *Artigos Sacros*.
 - **Modal de Inspeção Detalhada:**
   - Imagens em alta definição com zoom sutil.
@@ -211,9 +211,9 @@ npm run preview
 
 Para acessar o painel administrativo:
 1. Clique no link **"Acesso Administrativo"** no rodapé do site ou acesse diretamente pela rota `#/admin` (ex: `http://localhost:5173/#/admin`).
-2. Utilize as credenciais padrão de demonstração:
-   - **E-mail:** `admin@mimosatelie.com`
-   - **Senha:** `mimos2026`
+2. Utilize as credenciais padrão do administrador:
+   - **E-mail:** `eversonpaiva87@gmail.com`
+   - **Senha:** `Mimosatelie@2026`
 3. Você pode alterar seu e-mail e senha a qualquer momento na aba **"Identidade & WhatsApp"** dentro do próprio painel.
 
 ---

@@ -10,7 +10,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { BentoSize, Product, ProductCategory } from '../../types';
-import { processUploadedImageFile } from '../../services/supabaseService';
+import { uploadProductImage, processUploadedImageFile } from '../../services/supabaseService';
 import { buildProductWhatsAppMessage, buildProductWhatsAppUrl } from '../../utils/whatsapp';
 
 interface ProductFormModalProps {
@@ -103,10 +103,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     if (!file) return;
     setIsUploading(true);
     try {
-      const dataUrl = await processUploadedImageFile(file);
-      setImageUrl(dataUrl);
+      const uploadedUrl = await uploadProductImage(file);
+      setImageUrl(uploadedUrl);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao carregar imagem.');
+      alert(err instanceof Error ? err.message : 'Erro ao processar e enviar imagem.');
     } finally {
       setIsUploading(false);
     }

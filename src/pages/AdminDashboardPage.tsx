@@ -85,12 +85,14 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   const handleSaveProduct = async (product: Product) => {
-    const { syncedCloud } = await saveProduct(product);
-    showToast(
-      syncedCloud
-        ? `Peça "${product.name}" salva e sincronizada no Supabase!`
-        : `Peça "${product.name}" atualizada em tempo real no catálogo!`
-    );
+    const res = await saveProduct(product);
+    if (res.syncedCloud) {
+      showToast(`✅ Peça "${product.name}" salva e sincronizada instantaneamente no Supabase!`);
+    } else if (res.error) {
+      showToast(`⚠️ Salvo localmente. Supabase: ${res.error}`);
+    } else {
+      showToast(`Peça "${product.name}" atualizada em tempo real no catálogo local!`);
+    }
   };
 
   const handleDelete = async (product: Product) => {
@@ -98,8 +100,12 @@ export const AdminDashboardPage: React.FC = () => {
       `Tem certeza que deseja excluir permanentemente "${product.name}" do catálogo?`
     );
     if (!confirmed) return;
-    await deleteProduct(product.id);
-    showToast(`Peça "${product.name}" removida do acervo.`);
+    const res = await deleteProduct(product.id);
+    if (res.syncedCloud) {
+      showToast(`✅ Peça "${product.name}" excluída e sincronizada no Supabase.`);
+    } else {
+      showToast(`Peça "${product.name}" removida do acervo local.`);
+    }
   };
 
   const handleInlinePriceBlur = async (product: Product) => {
@@ -107,35 +113,45 @@ export const AdminDashboardPage: React.FC = () => {
     if (raw === undefined) return;
     const numeric = Number(raw.replace(',', '.'));
     if (!Number.isNaN(numeric) && numeric >= 0 && numeric !== product.price) {
-      await quickUpdatePrice(product.id, numeric);
-      showToast(`Preço de "${product.name}" atualizado para ${formatCurrencyBRL(numeric)}!`);
+      const res = await quickUpdatePrice(product.id, numeric);
+      if (res && 'syncedCloud' in res && res.syncedCloud) {
+        showToast(`✅ Preço de "${product.name}" atualizado e salvo no Supabase: ${formatCurrencyBRL(numeric)}!`);
+      } else {
+        showToast(`Preço de "${product.name}" atualizado para ${formatCurrencyBRL(numeric)}!`);
+      }
     }
   };
 
   const handleSaveGlobalSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { syncedCloud } = await updateSettings({
+    const res = await updateSettings({
       ...settings,
       brandName: brandName.trim() || 'Mimos Ateliê',
       brandTagline: brandTagline.trim(),
       whatsappNumber: whatsappNumber.replace(/\D/g, '') || '5532988847689',
       heroBadge: heroBadge.trim(),
     });
-    showToast(
-      syncedCloud
-        ? 'Configurações globais e WhatsApp salvas no Supabase!'
-        : 'WhatsApp e configurações globais atualizados em tempo real!'
-    );
+    if (res.syncedCloud) {
+      showToast('✅ Configurações globais e WhatsApp salvos instantaneamente no Supabase!');
+    } else if (res.error) {
+      showToast(`⚠️ Salvo localmente. Supabase: ${res.error}`);
+    } else {
+      showToast('WhatsApp e configurações globais atualizados em tempo real localmente!');
+    }
   };
 
   const handleSaveSupabaseConfig = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanUrl = sbUrl.trim();
+    const cleanKey = sbAnonKey.trim();
+    const shouldEnable = Boolean(cleanUrl && cleanKey);
+    setSbEnabled(shouldEnable);
     await updateSupabaseConnection({
-      url: sbUrl.trim(),
-      anonKey: sbAnonKey.trim(),
-      enabled: Boolean(sbEnabled && sbUrl.trim() && sbAnonKey.trim()),
+      url: cleanUrl,
+      anonKey: cleanKey,
+      enabled: shouldEnable,
     });
-    showToast('Configuração do Supabase atualizada!');
+    showToast(shouldEnable ? '✅ Conexão Supabase ativada e sincronização configurada!' : 'Configuração do Supabase atualizada!');
   };
 
   const handleSyncToCloud = async () => {
@@ -167,10 +183,21 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-50 px-3 py-0.5 font-mono text-[10px] font-bold uppercase text-emerald-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Catálogo Ativo ({dataSource === 'supabase' ? 'Supabase Cloud' : 'Armazenamento Local'})
-              </span>
+              {supabaseConfig.enabled && supabaseConfig.url ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-50 px-3 py-0.5 font-mono text-[10px] font-bold uppercase text-emerald-800">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Sincronização em Nuvem Ativa (Supabase)
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('supabase')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-50 px-3 py-0.5 font-mono text-[10px] font-bold uppercase text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  Modo Local / Offline (Clique para conectar Supabase)
+                </button>
+              )}
             </div>
             <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-atelie-brown-900">
               Painel de Gestão — <span className="text-gold-shimmer">{settings.brandName}</span>
@@ -336,7 +363,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-atelie-rose-200 bg-atelie-cream-200/90 font-mono text-[10px] uppercase font-bold tracking-wider text-atelie-brown-700">
                     <th className="py-3.5 px-4">Peça / Terço</th>
-                    <th className="py-3.5 px-4">Coleção & Bento</th>
+                    <th className="py-3.5 px-4">Coleção / Categoria</th>
                     <th className="py-3.5 px-4">Preço (Edição Rápida)</th>
                     <th className="py-3.5 px-4">Status Público</th>
                     <th className="py-3.5 px-4">Link WhatsApp</th>
@@ -377,8 +404,8 @@ export const AdminDashboardPage: React.FC = () => {
 
                         <td className="py-4 px-4 font-mono text-xs">
                           <span className="block font-bold text-atelie-rose-800">{product.category}</span>
-                          <span className="text-[11px] text-atelie-brown-500">
-                            Grid: {product.bentoSize}
+                          <span className="text-[11px] text-atelie-brown-500 truncate max-w-[160px] block">
+                            {product.subtitle || 'Série Artesanal'}
                           </span>
                         </td>
 

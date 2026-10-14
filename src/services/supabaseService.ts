@@ -25,15 +25,22 @@ let currentConfigSignature = '';
  * Obtém a configuração de conexão do Supabase (do .env ou configurada via Painel Admin)
  */
 export function getSupabaseConfig(): SupabaseConnectionConfig {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
   try {
     const savedRaw = localStorage.getItem(STORAGE_KEYS.SUPABASE_CONFIG);
     if (savedRaw) {
-      const parsed = JSON.parse(savedRaw) as SupabaseConnectionConfig;
-      if (parsed.url && parsed.anonKey) {
-        return parsed;
+      const parsed = JSON.parse(savedRaw) as Partial<SupabaseConnectionConfig>;
+      const url = (parsed.url || envUrl).trim();
+      const anonKey = (parsed.anonKey || envKey).trim();
+      if (url && anonKey) {
+        return {
+          url,
+          anonKey,
+          // Se as chaves foram configuradas, habilita por padrão a menos que explicitamente desligado
+          enabled: parsed.enabled !== false,
+        };
       }
     }
   } catch {
@@ -251,27 +258,45 @@ export async function fetchAllProducts(): Promise<{
 export async function upsertProductRecord(
   product: Product,
   currentList: Product[]
-): Promise<{ updatedList: Product[]; syncedCloud: boolean }> {
+): Promise<{ updatedList: Product[]; syncedCloud: boolean; error?: string }> {
   const exists = currentList.some((p) => p.id === product.id);
   const updatedList = exists
     ? currentList.map((p) => (p.id === product.id ? product : p))
-    : [product, ...currentList];
+    : [...currentList, product];
 
   saveLocalProducts(updatedList);
 
   const client = getSupabaseClient();
-  if (client) {
-    try {
-      const { error } = await client.from('products').upsert(mapProductToRow(product));
-      if (!error) {
-        return { updatedList, syncedCloud: true };
-      }
-    } catch (err) {
-      console.warn('Erro ao sincronizar produto no Supabase:', err);
-    }
+  if (!client) {
+    return {
+      updatedList,
+      syncedCloud: false,
+      error: 'Supabase não conectado ou desabilitado. Salvo apenas no armazenamento local.',
+    };
   }
 
-  return { updatedList, syncedCloud: false };
+  try {
+    const row = mapProductToRow(product);
+    const { error } = await client
+      .from('products')
+      .upsert(row, { onConflict: 'id' })
+      .select();
+
+    if (error) {
+      console.error('[Supabase upsertProductRecord Error]', error);
+      return {
+        updatedList,
+        syncedCloud: false,
+        error: `Erro no Supabase: ${error.message} (Código: ${error.code || 'RLS/Constraint'})`,
+      };
+    }
+
+    return { updatedList, syncedCloud: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Falha na conexão com Supabase';
+    console.error('[Supabase upsertProductRecord Exception]', err);
+    return { updatedList, syncedCloud: false, error: msg };
+  }
 }
 
 /**
@@ -280,23 +305,35 @@ export async function upsertProductRecord(
 export async function deleteProductRecord(
   productId: string,
   currentList: Product[]
-): Promise<{ updatedList: Product[]; syncedCloud: boolean }> {
+): Promise<{ updatedList: Product[]; syncedCloud: boolean; error?: string }> {
   const updatedList = currentList.filter((p) => p.id !== productId);
   saveLocalProducts(updatedList);
 
   const client = getSupabaseClient();
-  if (client) {
-    try {
-      const { error } = await client.from('products').delete().eq('id', productId);
-      if (!error) {
-        return { updatedList, syncedCloud: true };
-      }
-    } catch (err) {
-      console.warn('Erro ao excluir produto no Supabase:', err);
-    }
+  if (!client) {
+    return {
+      updatedList,
+      syncedCloud: false,
+      error: 'Supabase não conectado. Produto removido apenas localmente.',
+    };
   }
 
-  return { updatedList, syncedCloud: false };
+  try {
+    const { error } = await client.from('products').delete().eq('id', productId);
+    if (error) {
+      console.error('[Supabase deleteProductRecord Error]', error);
+      return {
+        updatedList,
+        syncedCloud: false,
+        error: `Erro ao excluir no Supabase: ${error.message}`,
+      };
+    }
+    return { updatedList, syncedCloud: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Falha na conexão com Supabase';
+    console.error('[Supabase deleteProductRecord Exception]', err);
+    return { updatedList, syncedCloud: false, error: msg };
+  }
 }
 
 /**
@@ -335,27 +372,33 @@ export async function fetchStoreSettings(): Promise<StoreSettings> {
  */
 export async function updateStoreSettingsRecord(
   settings: StoreSettings
-): Promise<{ syncedCloud: boolean }> {
+): Promise<{ syncedCloud: boolean; error?: string }> {
   saveLocalSettings(settings);
 
   const client = getSupabaseClient();
-  if (client) {
-    try {
-      const { error } = await client.from('store_settings').upsert({
-        id: 'global',
-        brand_name: settings.brandName,
-        brand_tagline: settings.brandTagline,
-        whatsapp_number: settings.whatsappNumber,
-        instagram_handle: settings.instagramHandle,
-        hero_badge: settings.heroBadge,
-        updated_at: new Date().toISOString(),
-      });
-      if (!error) return { syncedCloud: true };
-    } catch (err) {
-      console.warn('Erro ao salvar configurações no Supabase:', err);
-    }
+  if (!client) {
+    return { syncedCloud: false, error: 'Supabase não conectado' };
   }
-  return { syncedCloud: false };
+
+  try {
+    const { error } = await client.from('store_settings').upsert({
+      id: 'global',
+      brand_name: settings.brandName,
+      brand_tagline: settings.brandTagline,
+      whatsapp_number: settings.whatsappNumber,
+      instagram_handle: settings.instagramHandle,
+      hero_badge: settings.heroBadge,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' }).select();
+
+    if (error) {
+      console.error('[Supabase updateStoreSettingsRecord Error]', error);
+      return { syncedCloud: false, error: error.message };
+    }
+    return { syncedCloud: true };
+  } catch (err) {
+    return { syncedCloud: false, error: err instanceof Error ? err.message : 'Erro no Supabase' };
+  }
 }
 
 /**
@@ -397,23 +440,29 @@ export async function fetchBespokeSettings(): Promise<BespokeCustomizerSettings>
  */
 export async function updateBespokeSettingsRecord(
   settings: BespokeCustomizerSettings
-): Promise<{ syncedCloud: boolean }> {
+): Promise<{ syncedCloud: boolean; error?: string }> {
   saveLocalBespokeSettings(settings);
 
   const client = getSupabaseClient();
-  if (client) {
-    try {
-      const { error } = await client.from('bespoke_settings').upsert({
-        id: 'global',
-        settings: settings,
-        updated_at: new Date().toISOString(),
-      });
-      if (!error) return { syncedCloud: true };
-    } catch (err) {
-      console.warn('Erro ao salvar opções sob medida no Supabase:', err);
-    }
+  if (!client) {
+    return { syncedCloud: false, error: 'Supabase não conectado' };
   }
-  return { syncedCloud: false };
+
+  try {
+    const { error } = await client.from('bespoke_settings').upsert({
+      id: 'global',
+      settings: settings,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' }).select();
+
+    if (error) {
+      console.error('[Supabase updateBespokeSettingsRecord Error]', error);
+      return { syncedCloud: false, error: error.message };
+    }
+    return { syncedCloud: true };
+  } catch (err) {
+    return { syncedCloud: false, error: err instanceof Error ? err.message : 'Erro no Supabase' };
+  }
 }
 
 /**
@@ -494,10 +543,10 @@ export async function syncAllLocalToSupabase(
 }
 
 /**
- * Converte e otimiza um arquivo de imagem enviado do computador/celular (redimensionamento via Canvas)
- * para garantir alta nitidez e leveza tanto no banco local quanto no Supabase.
+ * Converte e otimiza um arquivo de imagem via Canvas para um tamanho ultraleve (~40KB-70KB)
+ * preservando alta nitidez e resolução ideal para exibição web.
  */
-export function processUploadedImageFile(file: File, maxWidth = 1280): Promise<string> {
+export function processUploadedImageFile(file: File, maxWidth = 960): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -519,8 +568,11 @@ export function processUploadedImageFile(file: File, maxWidth = 1280): Promise<s
           resolve(String(event.target?.result || ''));
           return;
         }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.86);
+        // Otimizado para ~40KB-70KB (evita sobrecarga no banco de dados e tráfego)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
         resolve(compressedDataUrl);
       };
       img.onerror = () => reject(new Error('Falha ao processar imagem selecionada.'));
@@ -529,4 +581,41 @@ export function processUploadedImageFile(file: File, maxWidth = 1280): Promise<s
     reader.onerror = () => reject(new Error('Falha ao ler arquivo do dispositivo.'));
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Tenta fazer upload direto no Supabase Storage (bucket 'products').
+ * Caso o bucket ainda não exista ou falhe, faz fallback automático para imagem otimizada em Canvas.
+ */
+export async function uploadProductImage(file: File): Promise<string> {
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const cleanExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const fileName = `terco_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${cleanExt}`;
+      const filePath = `uploads/${fileName}`;
+
+      const { data, error } = await client.storage
+        .from('products')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (!error && data) {
+        const { data: publicUrlData } = client.storage
+          .from('products')
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
+          return publicUrlData.publicUrl;
+        }
+      }
+    } catch {
+      // Ignora erro de storage e faz fallback suave para o processador canvas
+    }
+  }
+
+  return processUploadedImageFile(file, 960);
 }

@@ -130,7 +130,7 @@ export const PublicPortfolioPage: React.FC = () => {
         ) : (
           <motion.div
             layout
-            className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12"
+            className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch"
           >
             {filteredProducts.map((product, index) => (
               <BentoProductCard
