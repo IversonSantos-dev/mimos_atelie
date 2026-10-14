@@ -207,14 +207,6 @@ npm run preview
 
 ---
 
-## 🔐 Painel Administrativo
-
-Para acessar o painel administrativo:
-1. Clique no link **"Acesso Administrativo"** no rodapé do site ou acesse diretamente pela rota `#/admin` (ex: `http://localhost:5173/#/admin`).
-2. Utilize as credenciais padrão do administrador:
-   - **E-mail:** `eversonpaiva87@gmail.com`
-   - **Senha:** `Mimosatelie@2026`
-3. Você pode alterar seu e-mail e senha a qualquer momento na aba **"Identidade & WhatsApp"** dentro do próprio painel.
 
 ---
 
