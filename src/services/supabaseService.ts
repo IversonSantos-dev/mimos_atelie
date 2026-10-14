@@ -21,12 +21,16 @@ const STORAGE_KEYS = {
 let supabaseClientInstance: SupabaseClient | null = null;
 let currentConfigSignature = '';
 
+// Credenciais oficiais do projeto Supabase Mimos Ateliê (Chave pública 'anon' para acesso client-side)
+const DEFAULT_SUPABASE_URL = 'https://uavsedvxsgdbbjggezzi.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_sFgjporz8S_NiTE7-5cCwQ__WCYXyVt';
+
 /**
- * Obtém a configuração de conexão do Supabase (do .env ou configurada via Painel Admin)
+ * Obtém a configuração de conexão do Supabase (do .env, padrão do projeto ou configurada via Painel Admin)
  */
 export function getSupabaseConfig(): SupabaseConnectionConfig {
-  const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const envUrl = (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim();
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY).trim();
 
   try {
     const savedRaw = localStorage.getItem(STORAGE_KEYS.SUPABASE_CONFIG);
